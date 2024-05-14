@@ -30,14 +30,30 @@ define([
     var listSnippets = function() {
         // Your logic to list all saved snippets in a modal
         var snippets = Object.keys(localStorage);
+        if (snippets.length === 0) {
+            alert('No snippets saved yet!');
+            return;
+        }
         var modal = document.createElement('div');
         modal.className = 'modal';
         modal.style.display = 'block';
-        modal.style.position = 'fixed';
-        modal.style.zIndex = '1';
-        modal.style.paddingTop = '100px';
+
+        modal.style.zIndex = '99';
+        modal.style.top = '300px';
+        modal.style.width = '500px';
+        modal.style.boxSizing = 'border-box';
+        modal.style.marginInline = 'auto';
         var modalContent = document.createElement('div');
         modalContent.className = 'modal-content';
+        // set padding 2rem, bo-sizing border-box, background-color white, border-radius 5px, box-shadow 0 0 10px rgba(0, 0, 0, 0.1)
+        modalContent.style.padding = '2rem';
+        modalContent.style.boxSizing = 'border-box';
+        modalContent.style.backgroundColor = '#efefef';
+        modalContent.style.borderRadius = '5px';
+        modalContent.style.boxShadow = '0 0 10px rgba(0, 0, 0, 0.1)';
+        modalContent.style.height = 'textarea';
+        modalContent.style.width = '300px';
+
         var span = document.createElement('span');
         span.className = 'close';
         span.innerHTML = '&times;';
@@ -47,9 +63,44 @@ define([
         modalContent.appendChild(span);
         var ul = document.createElement('ul');
         snippets.forEach(function(snippet) {
+            // create link to view code and delete snippet
             var li = document.createElement('li');
-            li.innerHTML = snippet;
+            // add class flex 
+            li.style.display = 'flex';
+            li.style.justifyContent = 'space-between';
+            li.style.padding = '1rem';
+            li.style.width = '100%';
+            var a = document.createElement('a');
+            a.href = '#';
+            a.innerHTML = snippet;
+            a.onclick = function() {
+                var code = localStorage.getItem(snippet);
+                // if current cell is markdown, insert cell below
+                if (Jupyter.notebook.get_selected_cell().cell_type === 'markdown') {
+                    Jupyter.notebook.insert_cell_below('code');
+                } else if (Jupyter.notebook.get_selected_cell().cell_type === 'code') {
+                    if (Jupyter.notebook.get_selected_cell().get_text() !== '') {
+                        Jupyter.notebook.insert_cell_below('code');
+                    } else {
+                        Jupyter.notebook.get_selected_cell().set_text(code);
+                    }
+                }
+                modal.style.display = 'none';
+            };
+            // delete snippet
+
+            var deleteButton = document.createElement('button');
+            deleteButton.innerHTML = 'Delete';
+            deleteButton.onclick = function() {
+                localStorage.removeItem(snippet);
+                ul.removeChild(li);
+            };
+
+            li.appendChild(a);
+            li.appendChild(deleteButton);
+
             ul.appendChild(li);
+
         });
         modalContent.appendChild(ul);
         modal.appendChild(modalContent);
@@ -62,6 +113,9 @@ define([
         var code = Jupyter.notebook.get_selected_cell().get_text();
         // show popup to allow use to set snippet short code
         var shortCode = prompt("Enter a short code for this snippet");
+        if (!shortCode) {
+            return;
+        }
         // save the snippet to local storage
         localStorage.setItem(shortCode, code);
         // show success message
